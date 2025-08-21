@@ -37,8 +37,22 @@ class UserAuthController extends Controller
         }
 
         if (Auth::attempt($credentials)) {
+            if (Auth::user()->role !== 'user') {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return back()->withErrors([
+                    'email' => 'Anda tidak memiliki akses.'
+                ])->onlyInput('email');
+            }
+            
             \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
+            
+            // Set session flash messages for SweetAlert
+            session()->flash('login_success', true);
+            session()->flash('user_name', Auth::user()->name);
+            
             return redirect()->intended('/');
         }
 
@@ -64,15 +78,25 @@ class UserAuthController extends Controller
             'role' => 'user',
         ]);
 
-        Auth::login($user);
-        return redirect()->route('user.login')->with('success', 'Registrasi berhasil! Silakan login.');
+        // Set session flash message for successful registration
+        return redirect()->route('user.login')
+            ->with('registration_success', true)
+            ->with('registered_name', $user->name);
     }
 
     public function logout(Request $request)
     {
+        // Get user name before logout for the success message
+        $userName = Auth::user()->name ?? '';
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        
+        // Set session flash messages for SweetAlert
+        session()->flash('logout_success', true);
+        session()->flash('logged_out_user', $userName);
+        
         return redirect('/');
     }
 }

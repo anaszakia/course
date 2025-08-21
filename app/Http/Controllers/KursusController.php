@@ -130,6 +130,34 @@ class KursusController extends Controller
     }
 
     /**
+     * ✏️ Menampilkan form untuk mengedit kursus
+     */
+    public function edit($id)
+    {
+        try {
+            // Cari kursus berdasarkan ID
+            $kursus = Kursus::findOrFail($id);
+            
+            // Data untuk dropdown di form
+            $kategoris = Kategori::orderBy('nama')->get();
+            
+            return view('admin.kursus.edit', compact('kursus', 'kategoris'));
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Kursus not found for edit', ['id' => $id]);
+            return back()->with('error', 'Kursus tidak ditemukan!');
+        } catch (\Exception $e) {
+            Log::error('Error saat menampilkan form edit kursus', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->with('error', 'Gagal menampilkan form edit: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * 🗑️ Hapus kursus
      */
     public function destroy($id)

@@ -3,14 +3,18 @@
 use App\Models\Kursus;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TugasController;
 use App\Http\Controllers\KursusController;
+use App\Http\Controllers\MateriController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\PendaftaranController;
+use App\Http\Controllers\CourseMateriController;
 use App\Http\Controllers\Auth\UserAuthController;
+use App\Http\Controllers\AllSubmissionsController;
 use App\Http\Controllers\Admin\TransaksiController;
 
 
@@ -85,6 +89,31 @@ Route::middleware(['auth', 'role:admin', 'log.sensitive'])
         Route::get('/transaksi/{id}', [TransaksiController::class, 'show'])->name('transaksi.show');
         Route::put('/transaksi/{id}/status', [TransaksiController::class, 'updateStatus'])->name('transaksi.updateStatus');
         Route::post('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
+        
+        // Materi routes
+        Route::get('/kursus/{kursus_id}/materi', [MateriController::class, 'index'])->name('materi.index');
+        Route::get('/kursus/{kursus_id}/materi/create', [MateriController::class, 'create'])->name('materi.create');
+        Route::post('/kursus/{kursus_id}/materi', [MateriController::class, 'store'])->name('materi.store');
+        Route::get('/kursus/{kursus_id}/materi/{id}/edit', [MateriController::class, 'edit'])->name('materi.edit');
+        Route::put('/kursus/{kursus_id}/materi/{id}', [MateriController::class, 'update'])->name('materi.update');
+        Route::delete('/kursus/{kursus_id}/materi/{id}', [MateriController::class, 'destroy'])->name('materi.destroy');
+        
+        // Tugas routes
+        Route::get('/kursus/{kursus_id}/tugas', [TugasController::class, 'index'])->name('tugas.index');
+        Route::get('/kursus/{kursus_id}/tugas/create', [TugasController::class, 'create'])->name('tugas.create');
+        Route::post('/kursus/{kursus_id}/tugas', [TugasController::class, 'store'])->name('tugas.store');
+        Route::get('/kursus/{kursus_id}/tugas/{id}/edit', [TugasController::class, 'edit'])->name('tugas.edit');
+        Route::put('/kursus/{kursus_id}/tugas/{id}', [TugasController::class, 'update'])->name('tugas.update');
+        Route::delete('/kursus/{kursus_id}/tugas/{id}', [TugasController::class, 'destroy'])->name('tugas.destroy');
+        Route::get('/kursus/{kursus_id}/tugas/{id}/submissions', [TugasController::class, 'submissions'])->name('tugas.submissions');
+        Route::get('/kursus/{kursus_id}/tugas/{tugas_id}/submission/{submission_id}/grade', [TugasController::class, 'showGradeForm'])->name('tugas.grade.show');
+        Route::post('/kursus/{kursus_id}/tugas/{tugas_id}/submission/{submission_id}/grade', [TugasController::class, 'grade'])->name('tugas.grade');
+        
+        // Route for viewing all submissions across all courses
+        Route::get('/tugas/submissions', [AllSubmissionsController::class, 'index'])->name('tugas.submissions');
+        Route::get('/tugas/{kursus_id}/submissions/{tugas_id}/download/{submission_id}', 
+        [AllSubmissionsController::class, 'download'])
+        ->name('tugas.submissions.download');
     });
 
 // auth user
@@ -174,3 +203,17 @@ Route::get('/pendaftaran/{id}/snap-token', [PendaftaranController::class, 'getSn
 // web.php
 Route::get('/courses/{id}/pay', [PendaftaranController::class, 'getSnapToken'])->middleware('log.sensitive')->name('courses.pay');
 Route::post('/midtrans/callback', [PendaftaranController::class, 'handleCallback']);
+
+// Course Material Routes for Students
+Route::middleware(['auth', 'log.sensitive'])->group(function () {
+    // Course material routes
+    Route::get('/courses/materi/{id}', [CourseMateriController::class, 'index'])->name('courses.materi');
+    Route::get('/courses/{kursus_id}/materi/{materi_id}', [CourseMateriController::class, 'show'])->name('courses.materi.show');
+    Route::get('/courses/{kursus_id}/materi/{materi_id}/download', [CourseMateriController::class, 'downloadMateri'])->name('courses.materi.download');
+    
+    // Assignment routes
+    Route::get('/courses/{kursus_id}/tugas/{tugas_id}/submit', [CourseMateriController::class, 'showSubmissionForm'])->name('courses.tugas.submit');
+    Route::post('/courses/{kursus_id}/tugas/{tugas_id}/submit', [CourseMateriController::class, 'submitAssignment'])->name('courses.tugas.submit.post');
+    Route::get('/courses/{kursus_id}/tugas/{tugas_id}/download', [CourseMateriController::class, 'downloadTugas'])->name('courses.tugas.download');
+    Route::get('/courses/{kursus_id}/tugas/{tugas_id}/pengumpulan/{submission_id}/download', [CourseMateriController::class, 'downloadSubmission'])->name('courses.pengumpulan.download');
+});

@@ -43,6 +43,8 @@
                         <td class="px-4 py-2 border-b">
                             @if($p->status == 'pending')
                                 <a href="{{ route('courses.register.success', ['id' => $p->id]) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 transition duration-150">Bayar Sekarang</a>
+                            @elseif($p->status == 'paid')
+                                <a href="{{ route('courses.materi', ['id' => $p->kursus_id]) }}" class="bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-green-700 transition duration-150">Masuk Kelas</a>
                             @else
                                 <span class="text-gray-400 text-xs">-</span>
                             @endif

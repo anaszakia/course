@@ -27,13 +27,21 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
+
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            
             // Clear rate limiting setelah login berhasil
             $this->clearLoginAttempts($request);
 
             $role = Auth::user()->role;
+            if ($role === 'user') {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return back()->withErrors([
+                    'email' => 'Anda tidak memiliki akses.'
+                ])->onlyInput('email');
+            }
 
             return redirect()->intended(match ($role) {
                 'admin'    => route('admin.dashboard'),
