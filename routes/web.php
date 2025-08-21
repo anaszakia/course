@@ -17,7 +17,7 @@ use App\Http\Controllers\Auth\UserAuthController;
 use App\Http\Controllers\AllSubmissionsController;
 use App\Http\Controllers\Admin\TransaksiController;
 
-
+// ========== ROUTE ADMIN LOGIN ==========
 // Route untuk halaman login dan register Admin
 Route::middleware('guest')->group(function () {
     // Form login
@@ -39,35 +39,29 @@ Route::middleware('guest')->group(function () {
          ->name('register.submit');
 });
 
-// Logout (method POST demi keamanan; pakai @csrf di form logout)
+// Logout admin (method POST demi keamanan; pakai @csrf di form logout)
 Route::post('/logout', [LoginController::class, 'logout'])
      ->middleware(['auth', 'log.sensitive'])
      ->name('logout');
 
-
-
-    // ========== ROUTE USER (FRONTEND) ==========
-    Route::prefix('user')->name('user.')->group(function () {
-        // hanya bisa diakses tamu (belum login)
-        Route::middleware('guest', 'log.sensitive')->group(function () {
-            // Form login user
-            Route::get('/login', [UserAuthController::class, 'showLoginForm'])->name('login');
-            // Proses login user
-            Route::post('/login', [UserAuthController::class, 'login'])->name('login.submit');
-            // Form register user
-            Route::get('/register', [UserAuthController::class, 'showRegisterForm'])->name('register');
-            // Proses register user
-            Route::post('/register', [UserAuthController::class, 'register'])->name('register.submit');
-        });
-        // Logout user
-        Route::post('/logout', [UserAuthController::class, 'logout'])->middleware('auth')->name('logout');
+// ========== ROUTE USER LOGIN (FRONTEND) ==========
+Route::prefix('user')->name('user.')->group(function () {
+    // hanya bisa diakses tamu (belum login)
+    Route::middleware('guest', 'log.sensitive')->group(function () {
+        // Form login user
+        Route::get('/login', [UserAuthController::class, 'showLoginForm'])->name('login');
+        // Proses login user
+        Route::post('/login', [UserAuthController::class, 'login'])->name('login.submit');
+        // Form register user
+        Route::get('/register', [UserAuthController::class, 'showRegisterForm'])->name('register');
+        // Proses register user
+        Route::post('/register', [UserAuthController::class, 'register'])->name('register.submit');
     });
-// Profile routes untuk admin & user, tetap pakai log.sensitive
-Route::middleware(['auth', 'log.sensitive'])->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // Logout user
+    Route::post('/logout', [UserAuthController::class, 'logout'])->middleware('auth')->name('logout');
 });
 
+// ========== ROUTE ADMIN AUTHENTICATED ==========
 // auth admin
 Route::middleware(['auth', 'role:admin', 'log.sensitive'])
     ->prefix('admin')
@@ -116,6 +110,7 @@ Route::middleware(['auth', 'role:admin', 'log.sensitive'])
         ->name('tugas.submissions.download');
     });
 
+// ========== ROUTE USER AUTHENTICATED ==========
 // auth user
 Route::middleware(['auth', 'role:user', 'log.sensitive'])
     ->prefix('user')
@@ -127,6 +122,14 @@ Route::middleware(['auth', 'role:user', 'log.sensitive'])
         // Tambahkan resource lain untuk user jika diperlukan
     });
 
+// ========== PROFILE ROUTES (ADMIN & USER) ==========
+// Profile routes untuk admin & user, tetap pakai log.sensitive
+Route::middleware(['auth', 'log.sensitive'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
+
+// ========== PUBLIC ROUTES ==========
 // Tampilkan halaman welcome/home saat mengakses domain utama
 Route::get('/', function () {
     $popularCourses = Kursus::with('kategori')
@@ -136,6 +139,7 @@ Route::get('/', function () {
         ->get();
     return view('welcome.home', compact('popularCourses'));
 });
+
 // Route untuk halaman tentang kami
 Route::get('/tentang-kami', function () {
     return view('welcome.about');
@@ -165,47 +169,78 @@ Route::get('/admin', function () {
     return redirect()->route('login');
 });
 
-//detail kurusus
+// detail kurusus
 Route::get('/program-kursus/detail/{id}', function ($id) {
     $course = Kursus::with('kategori')->findOrFail($id);
     return view('welcome.courses.detail', compact('course'));
 })->name('courses.detail');
 
-//daftar kursus
+// ========== COURSE REGISTRATION ROUTES (AUTH REQUIRED) ==========
+// daftar kursus
 Route::get('/program-kursus/daftar/{id}', function ($id) {
     $course = Kursus::with('kategori')->findOrFail($id);
     return view('welcome.courses.register', compact('course'));
-})->middleware(['auth', 'log.sensitive'])->name('courses.register');
+})->middleware(['auth', 'role:user', 'log.sensitive'])->name('courses.register');
 
 // Route proses simpan pendaftaran kursus
-Route::post('/program-kursus/daftar/{kursusId}', [PendaftaranController::class, 'store'])->middleware(['auth', 'log.sensitive'])->name('pendaftaran.store');
-// Route halaman sukses pendaftaran kursus
-Route::get('/program-kursus/daftar/sukses/{id}', [PendaftaranController::class, 'success'])->middleware(['auth', 'log.sensitive'])->name('courses.register.success');
-// Route halaman riwayat pendaftaran kursus user
-Route::get('/riwayat-pendaftaran', [PendaftaranController::class, 'riwayat'])->middleware(['auth', 'log.sensitive'])->name('pendaftaran.riwayat');
-// Endpoint AJAX untuk generate Snap Token Midtrans
-Route::post('/midtrans/token/{id}', [PendaftaranController::class, 'getSnapToken'])->middleware(['auth', 'log.sensitive'])->name('midtrans.token');
+Route::post('/program-kursus/daftar/{kursusId}', [PendaftaranController::class, 'store'])
+    ->middleware(['auth', 'role:user', 'log.sensitive'])
+    ->name('pendaftaran.store');
 
-//implementasi Midtrans
-// Route untuk callback Midtrans
-Route::post('/payment/callback', [PendaftaranController::class, 'handleCallback'])->middleware('log.sensitive')->name('payment.callback');
+// Route halaman sukses pendaftaran kursus
+Route::get('/program-kursus/daftar/sukses/{id}', [PendaftaranController::class, 'success'])
+    ->middleware(['auth', 'role:user', 'log.sensitive'])
+    ->name('courses.register.success');
+
+// Route halaman riwayat pendaftaran kursus user
+Route::get('/riwayat-pendaftaran', [PendaftaranController::class, 'riwayat'])
+    ->middleware(['auth', 'role:user', 'log.sensitive'])
+    ->name('pendaftaran.riwayat');
+
+// ========== MIDTRANS PAYMENT ROUTES ==========
+// Endpoint AJAX untuk generate Snap Token Midtrans
+Route::post('/midtrans/token/{id}', [PendaftaranController::class, 'getSnapToken'])
+    ->middleware(['auth', 'role:user', 'log.sensitive'])
+    ->name('midtrans.token');
+
+// Route untuk callback Midtrans (tidak perlu auth karena dipanggil dari Midtrans)
+Route::post('/payment/callback', [PendaftaranController::class, 'handleCallback'])
+    ->middleware('log.sensitive')
+    ->name('payment.callback');
+
 // Route untuk update status dari frontend setelah pembayaran berhasil
-Route::post('/pendaftaran/{id}/update-status', [PendaftaranController::class, 'updateStatus'])->middleware(['auth', 'log.sensitive'])->name('pendaftaran.update-status');
+Route::post('/pendaftaran/{id}/update-status', [PendaftaranController::class, 'updateStatus'])
+    ->middleware(['auth', 'role:user', 'log.sensitive'])
+    ->name('pendaftaran.update-status');
 
 // Route untuk redirect setelah payment
-Route::get('/payment/finish', [PendaftaranController::class, 'paymentFinish'])->middleware('log.sensitive')->name('payment.finish');
-Route::get('/payment/error', [PendaftaranController::class, 'paymentError'])->middleware('log.sensitive')->name('payment.error');
-Route::get('/payment/pending', [PendaftaranController::class, 'paymentPending'])->middleware('log.sensitive')->name('payment.pending');
+Route::get('/payment/finish', [PendaftaranController::class, 'paymentFinish'])
+    ->middleware('log.sensitive')
+    ->name('payment.finish');
+
+Route::get('/payment/error', [PendaftaranController::class, 'paymentError'])
+    ->middleware('log.sensitive')
+    ->name('payment.error');
+
+Route::get('/payment/pending', [PendaftaranController::class, 'paymentPending'])
+    ->middleware('log.sensitive')
+    ->name('payment.pending');
+
 // Route untuk mendapatkan Snap Token
 Route::get('/pendaftaran/{id}/snap-token', [PendaftaranController::class, 'getSnapToken'])
     ->name('pendaftaran.snap-token')
-    ->middleware(['auth', 'log.sensitive']);
+    ->middleware(['auth', 'role:user', 'log.sensitive']);
+
 // web.php
-Route::get('/courses/{id}/pay', [PendaftaranController::class, 'getSnapToken'])->middleware('log.sensitive')->name('courses.pay');
+Route::get('/courses/{id}/pay', [PendaftaranController::class, 'getSnapToken'])
+    ->middleware(['auth', 'role:user', 'log.sensitive'])
+    ->name('courses.pay');
+
 Route::post('/midtrans/callback', [PendaftaranController::class, 'handleCallback']);
 
+// ========== COURSE MATERIAL ROUTES FOR STUDENTS ==========
 // Course Material Routes for Students
-Route::middleware(['auth', 'log.sensitive'])->group(function () {
+Route::middleware(['auth', 'role:user', 'log.sensitive'])->group(function () {
     // Course material routes
     Route::get('/courses/materi/{id}', [CourseMateriController::class, 'index'])->name('courses.materi');
     Route::get('/courses/{kursus_id}/materi/{materi_id}', [CourseMateriController::class, 'show'])->name('courses.materi.show');
