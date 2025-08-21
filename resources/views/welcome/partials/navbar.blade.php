@@ -3,47 +3,11 @@
         <div class="flex justify-between h-16">
             <!-- Logo -->
             <div class="flex items-center">
-                <a href="{{ url('/') }}" class="logo-container">
-                    <!-- Option 1: Modern Gradient Logo (Default) -->
-                    <div class="logo-main">
-                        <span class="logo-text">C</span>
+                <a href="{{ url('/') }}" class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">C</span>
                     </div>
-                    <span class="logo-brand">Course Online</span>
-                    
-                    <!-- Option 2: Book Theme Logo (Uncomment to use) -->
-                    <!-- 
-                    <div class="logo-book">
-                        <span class="logo-book-text">📚</span>
-                    </div>
-                    <span class="logo-brand">Course Online</span>
-                    -->
-                    
-                    <!-- Option 3: Tech Theme Logo (Uncomment to use) -->
-                    <!-- 
-                    <div class="logo-tech">
-                        <span class="logo-tech-text">C</span>
-                    </div>
-                    <span class="logo-brand">Course Online</span>
-                    -->
-                    
-                    <!-- Option 4: SVG Logo (Uncomment to use) -->
-                    <!-- 
-                    <div class="w-12 h-12">
-                        <svg viewBox="0 0 48 48" class="w-full h-full">
-                            <defs>
-                                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
-                                    <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
-                                    <stop offset="100%" style="stop-color:#60a5fa;stop-opacity:1" />
-                                </linearGradient>
-                            </defs>
-                            <rect width="48" height="48" rx="12" fill="url(#logoGradient)"/>
-                            <path d="M16 18h16v2H16zm0 6h16v2H16zm0 6h12v2H16z" fill="white" opacity="0.9"/>
-                            <circle cx="36" cy="32" r="3" fill="white" opacity="0.7"/>
-                        </svg>
-                    </div>
-                    <span class="logo-brand">Course Online</span>
-                    -->
+                    <span class="text-xl font-bold text-gray-900">Course Online</span>
                 </a>
             </div>
 
