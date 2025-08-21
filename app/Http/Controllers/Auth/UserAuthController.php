@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use App\Models\User;
 
 class UserAuthController extends Controller
@@ -27,14 +28,16 @@ class UserAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        // Throttle: max 5 attempts per 15 minutes per email+ip
-        $throttleKey = strtolower($request->input('email')).'|'.$request->ip();
-        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+        $throttleKey = 'user_login:' . strtolower($request->input('email')).'|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
             return back()->withErrors([
                 'email' => 'Terlalu banyak percobaan login. Silakan coba lagi dalam '.ceil($seconds/60).' menit.'
             ]);
         }
+
+        // Set session type untuk user
+        $request->session()->put('login_type', 'user');
 
         if (Auth::attempt($credentials)) {
             if (Auth::user()->role !== 'user') {
@@ -42,21 +45,20 @@ class UserAuthController extends Controller
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
                 return back()->withErrors([
-                    'email' => 'Anda tidak memiliki akses.'
+                    'email' => 'Anda tidak memiliki akses user.'
                 ])->onlyInput('email');
             }
             
-            \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
+            RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
             
-            // Set session flash messages for SweetAlert
             session()->flash('login_success', true);
             session()->flash('user_name', Auth::user()->name);
             
             return redirect()->intended('/');
         }
 
-        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 900); // 900 detik = 15 menit
+        RateLimiter::hit($throttleKey, 900);
 
         return back()->withErrors([
             'email' => 'Email atau password salah.',
@@ -78,7 +80,6 @@ class UserAuthController extends Controller
             'role' => 'user',
         ]);
 
-        // Set session flash message for successful registration
         return redirect()->route('user.login')
             ->with('registration_success', true)
             ->with('registered_name', $user->name);
@@ -86,14 +87,15 @@ class UserAuthController extends Controller
 
     public function logout(Request $request)
     {
-        // Get user name before logout for the success message
         $userName = Auth::user()->name ?? '';
         
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // Pastikan logout hanya untuk user
+        if (session('login_type') === 'user') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
         
-        // Set session flash messages for SweetAlert
         session()->flash('logout_success', true);
         session()->flash('logged_out_user', $userName);
         
